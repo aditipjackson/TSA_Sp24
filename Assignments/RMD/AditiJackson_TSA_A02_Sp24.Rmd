@@ -83,8 +83,10 @@ Transform your data frame in a time series object and specify the starting point
 
 ```{r time series object}
 
-# transforming data into ts object
-renewable_energy_ts <- ts(renewable_energy_sub,start=c(1973,1),frequency=12)
+# transforming data into ts object; start date is Jan 1, 1973; frequency is 12 (monthly data)
+renewable_energy_ts <- ts(renewable_energy_sub[,4],start=c(1973,1),frequency=12)
+
+renewable_energy_ts
 
 ```
 
@@ -94,10 +96,9 @@ Compute mean and standard deviation for these three series.
 
 ```{r}
 
-# calculating mean and standard deviation for time series
+# calculating mean and standard deviation for time series. I'm not sure this is correct since it's giving 1 value for all three columns
 mean_ts <- mean(renewable_energy_ts)
 stDev_ts <- sd(renewable_energy_ts)
-
 
 # mean / standard deviation for each separately
 renewable_energy_stats <- renewable_energy_sub %>%
@@ -115,35 +116,65 @@ renewable_energy_stats <- renewable_energy_sub %>%
 Display and interpret the time series plot for each of these variables. Try to make your plot as informative as possible by writing titles, labels, etc. For each plot add a horizontal line at the mean of each series in a different color.
 
 ```{r initial plots}
-autoplot(renewable_energy_ts) +
-  xlab("Time") +
-  ylab("Trillion Btu")
 
-# FIX GRAPH, ADD INTERPRETATION
+# plotting Total Biomass Production
+ggplot(renewable_energy_sub,aes(x=Date,y=Total.Biomass.Energy.Production))+
+  geom_line(color="black")+
+  geom_smooth(method="lm")+
+  labs(x="Date",y="Trillion Btu",title="Total Biomass Production")
+
+# plotting Total Renewable Energy Production
+ggplot(renewable_energy_sub,aes(x=Date,y=Total.Renewable.Energy.Production))+
+  geom_line(color="black")+
+  geom_smooth(method="lm")+
+  labs(x="Date",y="Trillion Btu",title="Total Renewable Energy Production")
+
+# plotting Hydroelectric Power Consumption
+ggplot(renewable_energy_sub,aes(x=Date,y=Hydroelectric.Power.Consumption))+
+  geom_line(color="black")+
+  geom_smooth(method="lm")+
+  labs(x="Date",y="Trillion Btu",title="Hydroelectric Power Consumption")
 
 ```
+Interpretation of Time Series Plots
+> Total Biomass Production: The plot shows an upward trend in production over time. We can see this from the highly positive slope of the trend line in blue. There also seems to be some seasonanality in the plot as similar cyclical patterns seem to repeat.
 
+> Total Renewable Energy Production: Similarly to biomass production, there appears to be a positive trend in renewable energy production over time. The plot is very similar to that of the Biomass plot, which is unsurprising given the increasing demand alternatives to fossil energy. Like above, there seems to be some seasonality.
+
+> Hydroelectric Power Consumption: There is a slight downward trend in hydroelectric power consumption over time. This is interesting and stands in constrast to Biomass and Renewables production. This downward trend could be because consumers are switching to alternative forms of renewable energy as production / availability increases.
 
 ## Question 5
 Compute the correlation between these three series. Are they significantly correlated? Explain your answer.
 
 ```{r correlation}
 
+# NOTE: Used chatGPT to determine which function to use to calculate correlation between all three time series
+cor_matrix <- 
+  cor(renewable_energy_sub[,c("Total.Biomass.Energy.Production",
+                              "Total.Renewable.Energy.Production",
+                              "Hydroelectric.Power.Consumption")])
 
+print(cor_matrix)
 
 ```
-
+Answer: 
+> It appears that biomass production and renewable energy production are highly correlated with a correlation coefficient of 0.97. This does not seem that surprising since both variables relate to the production of alternative forms of energy (non-fossil). Meanwhile, hydroelectric power consumption does not appear to be correlated with either biomass or renewable energy production based on the fact the correlation coefficients are > 0.1.
 
 ## Question 6
 Compute the autocorrelation function from lag 1 up to lag 40 for these three variables. What can you say about these plots? Do the three of them have the same behavior?
 
-```{r}
+```{r acf and pacf}
 
-BiomassProd_acf=Acf(renewable_energy_ts[,1],lag.max=40, type="correlation", plot=TRUE)
+TS_acf <- Acf(renewable_energy_ts,lag.max=40,type="correlation",plot=TRUE)
 
-RenewablesProd_acf=Acf(renewable_energy_ts[,2],lag.max=40, type="correlation", plot=TRUE)
 
-HydroConsump_acf=Acf(renewable_energy_ts[,3],lag.max=40, type="correlation", plot=TRUE)
+BiomassProd_acf <- Acf(renewable_energy_ts[,1],lag.max=40, type="correlation", plot=TRUE)
+
+RenewablesProd_acf <- Acf(renewable_energy_ts[,2],lag.max=40, type="correlation", plot=TRUE)
+
+HydroConsump_acf <- Acf(renewable_energy_ts[,3],lag.max=40, type="correlation", plot=TRUE)
+
+
 ```
 
 
