@@ -167,7 +167,6 @@ Compute the autocorrelation function from lag 1 up to lag 40 for these three var
 
 TS_acf <- Acf(renewable_energy_ts,lag.max=40,type="correlation",plot=TRUE)
 
-
 BiomassProd_acf <- Acf(renewable_energy_ts[,1],lag.max=40, type="correlation", plot=TRUE)
 
 RenewablesProd_acf <- Acf(renewable_energy_ts[,2],lag.max=40, type="correlation", plot=TRUE)
