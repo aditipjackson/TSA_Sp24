@@ -50,8 +50,13 @@ Consider the data provided in the spreadsheet "Table_10.1_Renewable_Energy_Produ
 # checking working directory
 getwd()
 
-# loading data using read.csv; NOTE - R was not letting me change my working directory to be my project folder, so I moved the file to Assignments > RMD (current wd) as a workaround
-renewable_energy_full <- read.csv(file="Table_10.1_Renewable_Energy_Production_and_Consumption_by_Source.csv", header = TRUE, dec = ".", sep=",",stringsAsFactors = TRUE)
+# loading data using read.csv
+# NOTE - R not letting me change my working directory to be my project folder, so
+# I moved the file to Assignments > RMD (current wd) as a workaround
+
+renewable_energy_full <- read.csv(
+  file="Table_10.1_Renewable_Energy_Production_and_Consumption_by_Source.csv",
+  header = TRUE, dec = ".", sep=",",stringsAsFactors = TRUE)
 
 # converting Month column to date object using lubridate
 renewable_energy_full$Month <- ym(renewable_energy_full$Month)
@@ -67,9 +72,14 @@ You will work only with the following columns: Total Biomass Energy Production, 
 
 ```{r dataframe}
 
-# creating subset of data with Total Biomass Energy Production, Total Renewable Energy Production, Hydroelectric Power Consumption by date
+# creating subset of data with Total Biomass Energy Production,
+# Total Renewable Energy Production, Hydroelectric Power Consumption by date
 renewable_energy_sub <- renewable_energy_full %>%
-  select(Date,Total.Biomass.Energy.Production,Total.Renewable.Energy.Production,Hydroelectric.Power.Consumption)
+  select(
+    Date,
+    Total.Biomass.Energy.Production,
+    Total.Renewable.Energy.Production,
+    Hydroelectric.Power.Consumption)
 
 # Verifying data
 head(renewable_energy_sub)
@@ -83,8 +93,10 @@ Transform your data frame in a time series object and specify the starting point
 
 ```{r time series object}
 
-# transforming data into ts object; start date is Jan 1, 1973; frequency is 12 (monthly data)
-renewable_energy_ts <- ts(renewable_energy_sub[,4],start=c(1973,1),frequency=12)
+# transforming data into ts object
+# start date is Jan 1, 1973
+# frequency is 12 (monthly data)
+renewable_energy_ts <- ts(renewable_energy_sub,start=c(1973,1),frequency=12)
 
 renewable_energy_ts
 
@@ -96,18 +108,19 @@ Compute mean and standard deviation for these three series.
 
 ```{r}
 
-# calculating mean and standard deviation for time series. I'm not sure this is correct since it's giving 1 value for all three columns
-mean_ts <- mean(renewable_energy_ts)
-stDev_ts <- sd(renewable_energy_ts)
+# calculating mean and standard deviation for each time series
 
-# mean / standard deviation for each separately
-renewable_energy_stats <- renewable_energy_sub %>%
-  summarize(Mean.Biomass.Prod = mean(Total.Biomass.Energy.Production),
-            Mean.Renew.Energy.Prod = mean(Total.Renewable.Energy.Production),
-            Mean.Hydro.Cons = mean(Hydroelectric.Power.Consumption),
-            SD.Biomass.Prod = sd(Total.Biomass.Energy.Production),
-            SD.Renew.Energy.Prod = sd(Total.Renewable.Energy.Production),
-            SD.Hydro.Cons = sd(Hydroelectric.Power.Consumption))
+# mean and sd for biomass
+bioMass_mean_ts <- print(mean(renewable_energy_ts[,2]))
+bioMass_stDev_ts <- print(sd(renewable_energy_ts[,2]))
+
+# mean and sd for renewable energy
+renewEnergy_mean_ts <- print(mean(renewable_energy_ts[,3]))
+renewEnergy_stDev_ts <- print(sd(renewable_energy_ts[,3]))
+
+# mean and sd for hydroelectric
+Hydro_mean_ts <- print(mean(renewable_energy_ts[,4]))
+Hydro_stDev_ts <- print(sd(renewable_energy_ts[,4]))
 
 ```
 
@@ -148,7 +161,9 @@ Compute the correlation between these three series. Are they significantly corre
 
 ```{r correlation}
 
-# NOTE: Used chatGPT to determine which function to use to calculate correlation between all three time series
+# NOTE: Used chatGPT to determine which function to use
+# to calculate correlation between all three time series
+
 cor_matrix <- 
   cor(renewable_energy_sub[,c("Total.Biomass.Energy.Production",
                               "Total.Renewable.Energy.Production",
@@ -165,29 +180,27 @@ Compute the autocorrelation function from lag 1 up to lag 40 for these three var
 
 ```{r acf and pacf}
 
-TS_acf <- Acf(renewable_energy_ts,lag.max=40,type="correlation",plot=TRUE)
+BiomassProd_acf <- Acf(renewable_energy_ts[,2],lag.max=40)
 
-BiomassProd_acf <- Acf(renewable_energy_ts[,1],lag.max=40, type="correlation", plot=TRUE)
+RenewablesProd_acf <- Acf(renewable_energy_ts[,3],lag.max=40)
 
-RenewablesProd_acf <- Acf(renewable_energy_ts[,2],lag.max=40, type="correlation", plot=TRUE)
-
-HydroConsump_acf <- Acf(renewable_energy_ts[,3],lag.max=40, type="correlation", plot=TRUE)
-
+HydroConsump_acf <- Acf(renewable_energy_ts[,4],lag.max=40)
 
 ```
-
+Answer:
+> The biomass and renewable energy ACF plots behave similarly,but the hydro power plot of ACF looks very different. The biomass and renewable energy plots show significant correlation within each dataset. ACF appears positive for all lags for these two time series. For hydro power, some autocorrelation is present, but the amplitudes don't appear as big compared to the first two time series, suggesting potentially less correlation between variables.
 
 ## Question 7
 Compute the partial autocorrelation function from lag 1 to lag 40 for these three variables. How these plots differ from the ones in Q6?
 
 ```{r}
 
-BiomassProd_pacf=Pacf(renewable_energy_ts[,1],lag.max=40, type="correlation", plot=TRUE)
+BiomassProd_pacf=Pacf(renewable_energy_ts[,2],lag.max=40)
 
-RenewablesProd_pacf=Pacf(renewable_energy_ts[,2],lag.max=40, type="correlation", plot=TRUE)
+RenewablesProd_pacf=Pacf(renewable_energy_ts[,3],lag.max=40)
 
-HydroConsump_pacf=Pacf(renewable_energy_ts[,3],lag.max=40, type="correlation", plot=TRUE)
+HydroConsump_pacf=Pacf(renewable_energy_ts[,4],lag.max=40)
 
 ```
-
-
+Answer:
+> The PACF plots show us which lags are most significant within each time series. In other words, which instances within a specific variable are most correlated with each other. From these plots we should consider adding lags that breach the blue dotted line to our model as they may help us better explain trends / construct more accurate forecasts. 
