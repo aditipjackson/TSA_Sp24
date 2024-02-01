@@ -95,7 +95,7 @@ For each time series, i.e., Renewable Energy Production and Hydroelectric Consum
 ## ts plot
 Renewables_tsplot <- ggplot(renewable_energy_sub,aes(x=Date,y=Total.Renewable.Energy.Production))+
   geom_line(color="black")+
-  #geom_smooth(method="lm")+
+  geom_smooth(method="lm")+
   labs(x="Date",y="Trillion Btu",title="Total Renewable Energy Production")
 
 ## acf plot
@@ -203,8 +203,21 @@ ggplot(df_hydro_detrend,aes(x=date))+
 
 ### Q5
 Plot ACF and PACF for the detrended series and compare with the plots from Q1. You may use plot_grid() again to get them side by side. But mot mandatory. Did the plots change? How?
-```{r}
+```{r detrend acf, pacf}
 
+# Renewables - detrend ACF and PACF
+Renewables_detrend_acf <- Acf(Renew_detrend,lag.max = 40)
+Renewables_detrend_pacf <- Pacf(Renew_detrend, lag.max = 40)
+
+plot_grid(autoplot(Renewables_detrend_acf), autoplot(Renewables_detrend_pacf))
+
+# Hydroelectric - detrend ACF and PACF
+HydroConsump_detrend_acf <- Acf(Hydro_detrend,lag.max = 40)
+HydroConsump_detrend_pacf <- Pacf(Hydro_detrend,lag.max = 40)
+
+plot_grid(autoplot(HydroConsump_detrend_acf), autoplot(HydroConsump_detrend_pacf))
+
+# HOW DID THE PLOTS CHANGE?
 
 ```
 
@@ -214,64 +227,113 @@ Set aside the de-trended series and consider the original series again from Q1 t
 
 ### Q6
 Just by looking at the time series and the acf plots, do the series seem to have a seasonal trend? No need to run any code to answer your question. Just type in you answer below.
-> 
+> Yes, both renewable energy production and hydroelectric consumption series seem to have seasonal components. We can see this from the sinusoidol patterns in the plots. ADD / CONFIRM
 
 
 ### Q7
-Use function *lm()* to fit a seasonal means model (i.e. using the seasonal dummies) the two time series. Ask R to print the summary of the regression. Interpret the regression output. From the results which series have a seasonal trend? Do the results match you answer to Q6?
-```{r}
+Use function *lm()* to fit a seasonal means model (i.e. using the seasonal dummies) to the two time series. Ask R to print the summary of the regression. Interpret the regression output. From the results which series have a seasonal trend? Do the results match you answer to Q6?
+```{r fitting seasonal means model}
 
+# Renewable Energy Seasonal Means Model
+
+# creating seasonal dummy
+REP_seasonal_dummy <- seasonaldummy(renewable_energy_ts[,2])  
+
+# fitting linear model to the seasonal dummy
+REP_seasonal_means_model <- lm(renewable_energy_sub[,2]~REP_seasonal_dummy)
+summary(REP_seasonal_means_model)
+
+
+# Hydroelectric Power Seasonal Means Model
+
+# creating seasonal dummy
+HPC_seasonal_dummy <- seasonaldummy(renewable_energy_ts[,3])  
+
+# fitting linear model to the seasonal dummy
+HPC_seasonal_means_model <- lm(renewable_energy_sub[,3]~REP_seasonal_dummy)
+summary(HPC_seasonal_means_model)
+
+
+# INTERPRET REGRESSION OUTPUT. WHICH SERIES HAVE A SEASONAL TREND?
 
 ```
 
 
 ### Q8
 Use the regression coefficients from Q7 to deseason the series. Plot the deseason series and compare with the plots from part Q1. Did anything change?
-```{r}
+```{r deseasoning series}
 
+# Renewable Energy Production
+
+## storing regression coefficients in order to de-season data
+Renew_SMM_beta0 <- REP_seasonal_means_model$coefficients[1]
+Renew_SMM_beta1 <- REP_seasonal_means_model$coefficients[2]
+
+## Computing seasonal component
+
+nobs <- nrow(renewable_energy_sub)
+
+
+#compute seasonal component
+REP_seas_comp <- array(0,nobs)
+for(i in 1:nobs){
+  REP_seas_comp[i] <- (Renew_SMM_beta0+Renew_SMM_beta1%*%REP_seasonal_dummy[i,])
+}
+
+# removing seasonal component
+deseason_REP <- renewable_energy_sub[,2]-REP_seas_comp
+  
+# plotting deseasoned data
+ggplot(renewable_energy_sub,aes(x=Date,y=Total.Renewable.Energy.Production))+
+  geom_line(color="blue")+
+  labs(y="Total RE Production")+
+  geom_line(aes(y=deseason_REP),color="green")
+
+
+
+# Hydroelectric Power Consumption
+
+## storing regression coefficients in order to de-season data
+Hydro_SMM_beta0 <- HPC_seasonal_means_model$coefficients[1]
+Hydro_SMM_beta1 <- HPC_seasonal_means_model$coefficients[2]
+
+#compute seasonal component
+HPC_seas_comp <- array(0,nobs)
+for(i in 1:nobs){
+  HPC_seas_comp[i] <- (Hydro_SMM_beta0+Hydro_SMM_beta1%*%HPC_seasonal_dummy[i,])
+}
+
+## removing seasonal component
+deseason_HPC <- renewable_energy_sub[,3]-HPC_seas_comp
+  
+## plotting deseasoned data
+ggplot(renewable_energy_sub,aes(x=Date,y=Hydroelectric.Power.Consumption))+
+  geom_line(color="blue")+
+  labs(y="Hydro Power Consumption")+
+  geom_line(aes(y=deseason_HPC),color="green")
+
+
+# ANSWER IF ANYTHING CHANGED
 
 ```
 
 
 ### Q9
 Plot ACF and PACF for the deseason series and compare with the plots from Q1. You may use plot_grid() again to get them side by side. nut mot mandatory. Did the plots change? How?
-```{r scraps}
-# Setting index variables
-ncolumns <- ncol(renewable_energy_sub) - 1
-nrows <- nrow(renewable_energy_sub)
+```{r deasoned acf and pacf}
 
-# Initialize a list to store plots
-plot_list <- list()
+# Deseasoned Renewable Energy Production - ACF, PACF
 
-# Plotting all three time series: Renewable Production & Hydroelectric Consumption
-for (i in 1:ncolumns) {
-  # Create the plot
-  plot <- ggplot(renewable_energy_sub, aes_string(x = "Date", y = colnames(renewable_energy_sub)[(1 + i)])) +
-    geom_line(color = "blue") +
-    ylab(paste0("TS: ", colnames(renewable_energy_sub)[(1 + i)], sep = ""))
-  
-# Store the plot in the list
-  plot_list[[i]] <- plot
-}
+REP_deseasoned_acf <- Acf(deseason_REP,lag.max = 40)
+REP_deseasoned_pacf <- Pacf(deseason_REP,lag.max = 40)
 
-# Combine plots using plot_grid
-combined_plot <- plot_grid(plotlist = plot_list, ncol = 2)  
-print(combined_plot)
 
-# plotting acf and pacf
-for (i in 1:ncolumns) {
-  par(mfrow = c(1, 2))  # Setting up the layout for ACF/PACF plots
-  Acf(renewable_energy_ts[, i], lag.max = 40, main = paste("ACF of TS:", i))
-  Pacf(renewable_energy_ts[, i], lag.max = 40, main = paste("PACF of TS:", i))
-}
+# Deseasoned Hydro Power Consumption - ACF, PACF
 
-# Store the plot in the list
-plot_list[[i]] <- plot
+HPC_deseasoned_acf <- Acf(deseason_HPC,lag.max = 40)
+HPC_deseasoned_pacf <- Pacf(deseason_HPC,lag.max = 40)
 
-# Combine plots using plot_grid
-combined_plot_cf <- plot_grid(plotlist = plot_list, ncol = 1)  # Adjust ncol as needed
-print(combined_plot)
-
+# ANSWER HOW THE PLOTS CHANGED
 
 ```
 
