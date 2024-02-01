@@ -29,7 +29,7 @@ When you have completed the assignment, **Knit** the text and code into a single
 
 ## Questions 
 
-Consider the same data you used for A2 from the spreadsheet "Table_10.1_Renewable_Energy_Production_and_Consumption_by_Source.xlsx". The data comes from the US Energy Information and Administration and corresponds to the December 2022 **Monthly** Energy Review. Once again you will work only with the following columns: Total Biomass Energy Production, Total Renewable Energy Production, Hydroelectric Power Consumption. Create a data frame structure with these three time series only.
+Consider the same data you used for A2 from the spreadsheet "Table_10.1_Renewable_Energy_Production_and_Consumption_by_Source.xlsx". The data comes from the US Energy Information and Administration and corresponds to the December 2022 **Monthly** Energy Review. Once again you will work only with the following columns: Total Renewable Energy Production and Hydroelectric Power Consumption. Create a data frame structure with these two time series only.
 
 R packages needed for this assignment:"forecast","tseries", and "Kendall". Install these packages, if you haven't done yet. Do not forget to load them before running your script, since they are NOT default packages.\\
 
@@ -39,7 +39,7 @@ R packages needed for this assignment:"forecast","tseries", and "Kendall". Insta
 #install.packages("tseries")
 #install.packages("Kendall")
 #install.packages("ggplot2")
-install.packages("cowplot")
+#install.packages("cowplot")
 
 library("forecast")
 library("tseries")
@@ -64,12 +64,10 @@ renewable_energy_full$Month <- ym(renewable_energy_full$Month)
 # renaming Month column to "Date"
 colnames(renewable_energy_full)[colnames(renewable_energy_full) == "Month"] <- "Date"
 
-# creating subset of data with Total Biomass Energy Production,
-# Total Renewable Energy Production, Hydroelectric Power Consumption by date
+# creating subset of data with Total Renewable Energy Production and Hydroelectric Power Consumption by date
 renewable_energy_sub <- renewable_energy_full %>%
   select(
     Date,
-    Total.Biomass.Energy.Production,
     Total.Renewable.Energy.Production,
     Hydroelectric.Power.Consumption)
 
@@ -92,88 +90,188 @@ For each time series, i.e., Renewable Energy Production and Hydroelectric Consum
 
 ```{r plotting time series, ACF, PACF}
 
-# setting index variables
-ncolumns <- ncol(renewable_energy_sub)-1
-nrows <- nrow(renewable_energy_sub)
+# Total Renewable Energy Production plots
 
-
-# plotting all three time series: Biomass Prod, Renewables Prod, Hydro Consumption
-for(i in 1:ncolumns){
-  print(ggplot(renewable_energy_sub,aes(x=Date,y=renewable_energy_sub[,(1+i)]))+
-          geom_line(color="blue")+
-          ylab(paste0("TS: ",colnames(renewable_energy_sub)[(1+i)],sep=""))
-          )
-}
-
-
-# plotting acf and pacf
-for(i in 1:ncolumns){
-  par(mfrow=c(1,2))
-  Acf(renewable_energy_ts[,i],lag.max=40,main=paste("TS:",i,sep=""))
-  Pacf(renewable_energy_ts[,i],lag.max=40,main=paste("TSL",i,sep=""))
-}
-
-# creating plot grid
-plot_grid()
-
-
-# plotting Total Biomass Production
-ggplot(renewable_energy_sub,aes(x=Date,y=Total.Biomass.Energy.Production))+
+## ts plot
+Renewables_tsplot <- ggplot(renewable_energy_sub,aes(x=Date,y=Total.Renewable.Energy.Production))+
   geom_line(color="black")+
-  geom_smooth(method="lm")+
-  labs(x="Date",y="Trillion Btu",title="Total Biomass Production")
-
-# plotting Total Renewable Energy Production
-ggplot(renewable_energy_sub,aes(x=Date,y=Total.Renewable.Energy.Production))+
-  geom_line(color="black")+
-  geom_smooth(method="lm")+
+  #geom_smooth(method="lm")+
   labs(x="Date",y="Trillion Btu",title="Total Renewable Energy Production")
 
-# plotting Hydroelectric Power Consumption
-ggplot(renewable_energy_sub,aes(x=Date,y=Hydroelectric.Power.Consumption))+
+## acf plot
+Renewables_acf <- Acf(renewable_energy_ts[,2],lag.max=40)
+
+## pacf plot
+Renewables_pacf <- Pacf(renewable_energy_ts[,2],lag.max=40)
+
+## plotting on same grid
+Renewables_allPlots <- plot_grid(Renewables_tsplot,autoplot(Renewables_acf),autoplot(Renewables_pacf),nrow=1)
+
+
+# Hydroelectric Power Consumption plots
+
+## ts plot
+Hydro_tsplot <- ggplot(renewable_energy_sub,aes(x=Date,y=Hydroelectric.Power.Consumption))+
   geom_line(color="black")+
   geom_smooth(method="lm")+
   labs(x="Date",y="Trillion Btu",title="Hydroelectric Power Consumption")
 
+## acf plot
+HydroConsump_acf <- Acf(renewable_energy_ts[,3],lag.max=40)
 
-BiomassProd_acf <- Acf(renewable_energy_ts[,2],lag.max=40)
-RenewablesProd_acf <- Acf(renewable_energy_ts[,3],lag.max=40)
-HydroConsump_acf <- Acf(renewable_energy_ts[,4],lag.max=40)
+## pacf plot
+HydroConsump_pacf <- Pacf(renewable_energy_ts[,3],lag.max=40)
 
-
-BiomassProd_pacf <- Pacf(renewable_energy_ts[,2],lag.max=40)
-RenewablesProd_pacf <- Pacf(renewable_energy_ts[,3],lag.max=40)
-HydroConsump_pacf <- Pacf(renewable_energy_ts[,4],lag.max=40)
-
+## plotting on same grid
+Hydro_allPlots <- plot_grid(Hydro_tsplot,autoplot(HydroConsump_acf),autoplot(HydroConsump_pacf))
 
 ```
 
 ### Q2
 From the plot in Q1, do the series Total Biomass Energy Production, Total Renewable Energy Production, Hydroelectric Power Consumption appear to have a trend? If yes, what kind of trend?
 
+> COME BACK... If using "i" you might not need gridplot?
+
 ### Q3
-Use the *lm()* function to fit a linear trend to the three time series. Ask R to print the summary of the regression. Interpret the regression output, i.e., slope and intercept. Save the regression coefficients for further analysis.
+Use the *lm()* function to fit a linear trend to the two time series. Ask R to print the summary of the regression. Interpret the regression output, i.e., slope and intercept. Save the regression coefficients for further analysis.
+```{r linear regressions}
+# creating vector "t" to represent number of observations
+num_obs <- nrow(renewable_energy_sub)
+t <- 1:num_obs
+
+# fitting linear regression for Renewable Energy Consumption time series
+Renewables_linReg <- lm(Total.Renewable.Energy.Production ~ t, data = renewable_energy_sub)
+summary(Renewables_linReg)
+
+# saving coefficients
+Renew_beta0 <- Renewables_linReg$coefficients[1]
+Renew_beta1 <- Renewables_linReg$coefficients[2]
+
+# ADD INTERPRETATION
+
+# fitting linear regression for Hydropower Production time series
+Hydro_linReg <- lm(Hydroelectric.Power.Consumption ~ t, data = renewable_energy_sub)
+summary(Hydro_linReg)
+
+# saving coefficients
+Hydro_beta0 <- Hydro_linReg$coefficients[1]
+Hydro_beta1 <- Hydro_linReg$coefficients[2]
+
+# ADD INTERPRETATION
+
+```
  
+
 ### Q4
 Use the regression coefficients from Q3 to detrend the series. Plot the detrended series and compare with the plots from Q1. What happened? Did anything change?
+```{r detrend}
+
+# Renewable Energy Production
+
+# de-trending renewable energy production time series 
+Renew_detrend <- renewable_energy_sub[,2] - (Renew_beta0+Renew_beta1*t)
+
+# creating data frame in order to plot
+df_renew_detrend <- data_frame("date"=renewable_energy_sub$Date,
+                               "observed"=renewable_energy_sub[,2],"detrend"=Renew_detrend)
+
+# plotting detrended series
+ggplot(df_renew_detrend,aes(x=date))+
+  geom_line(aes(y=observed),color="black")+
+  geom_line(aes(y=detrend),color="blue")+
+  labs(x="Date",y="Observations")
+
+
+# Hydroelectric Power Consumption
+ 
+# de-trending hydroelectric power consumption time series 
+Hydro_detrend <- renewable_energy_sub[,3] - (Hydro_beta0+Hydro_beta1*t)
+
+# creating data frame in order to plot
+df_hydro_detrend <- data_frame("date"=renewable_energy_sub$Date,
+                               "observed"=renewable_energy_sub[,3],"detrend"=Hydro_detrend)
+
+# plotting detrended series
+ggplot(df_hydro_detrend,aes(x=date))+
+  geom_line(aes(y=observed),color="black")+
+  geom_line(aes(y=detrend),color="blue")+
+  labs(x="Date",y="Observations")
+
+# ADD - HOW DO THESE PLOTS DIFFER FROM Q1???
+
+```
 
 ### Q5
-Plot ACF and PACF for the detrended series and compare with the plots from Q1. You may use plot_grid() again to get them side by side. nut mot mandatory. Did the plots change? How?
+Plot ACF and PACF for the detrended series and compare with the plots from Q1. You may use plot_grid() again to get them side by side. But mot mandatory. Did the plots change? How?
+```{r}
+
+
+```
 
 ## Seasonal Component
 
-Set aside the detrended series and consider the original series again from Q1 to answer Q6 to Q8.
+Set aside the de-trended series and consider the original series again from Q1 to answer Q6 to Q8.
 
 ### Q6
 Just by looking at the time series and the acf plots, do the series seem to have a seasonal trend? No need to run any code to answer your question. Just type in you answer below.
+> 
+
 
 ### Q7
 Use function *lm()* to fit a seasonal means model (i.e. using the seasonal dummies) the two time series. Ask R to print the summary of the regression. Interpret the regression output. From the results which series have a seasonal trend? Do the results match you answer to Q6?
+```{r}
+
+
+```
+
 
 ### Q8
 Use the regression coefficients from Q7 to deseason the series. Plot the deseason series and compare with the plots from part Q1. Did anything change?
+```{r}
+
+
+```
+
 
 ### Q9
 Plot ACF and PACF for the deseason series and compare with the plots from Q1. You may use plot_grid() again to get them side by side. nut mot mandatory. Did the plots change? How?
+```{r scraps}
+# Setting index variables
+ncolumns <- ncol(renewable_energy_sub) - 1
+nrows <- nrow(renewable_energy_sub)
 
+# Initialize a list to store plots
+plot_list <- list()
+
+# Plotting all three time series: Renewable Production & Hydroelectric Consumption
+for (i in 1:ncolumns) {
+  # Create the plot
+  plot <- ggplot(renewable_energy_sub, aes_string(x = "Date", y = colnames(renewable_energy_sub)[(1 + i)])) +
+    geom_line(color = "blue") +
+    ylab(paste0("TS: ", colnames(renewable_energy_sub)[(1 + i)], sep = ""))
+  
+# Store the plot in the list
+  plot_list[[i]] <- plot
+}
+
+# Combine plots using plot_grid
+combined_plot <- plot_grid(plotlist = plot_list, ncol = 2)  
+print(combined_plot)
+
+# plotting acf and pacf
+for (i in 1:ncolumns) {
+  par(mfrow = c(1, 2))  # Setting up the layout for ACF/PACF plots
+  Acf(renewable_energy_ts[, i], lag.max = 40, main = paste("ACF of TS:", i))
+  Pacf(renewable_energy_ts[, i], lag.max = 40, main = paste("PACF of TS:", i))
+}
+
+# Store the plot in the list
+plot_list[[i]] <- plot
+
+# Combine plots using plot_grid
+combined_plot_cf <- plot_grid(plotlist = plot_list, ncol = 1)  # Adjust ncol as needed
+print(combined_plot)
+
+
+```
 
