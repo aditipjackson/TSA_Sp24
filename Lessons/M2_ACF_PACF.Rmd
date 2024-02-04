@@ -109,7 +109,7 @@ Many of the functions we will use require a time series object. You can transfor
 ```{r}
 ts_inflow_data <- ts(inflow_data[,"HP3"],start=c(1931,1),frequency=12)
 # first argument is what you're trying to convert to time series; you can use the column # or column name. So use 2 instead of "HP1"
-# first space before comma reffers to # of rows; if you leave it blank it'll give you all the rows
+# first space before comma refers to # of rows; if you leave it blank it'll give you all the rows
 # frequency = number of times observation repeats
 
 ts_inflow_data 

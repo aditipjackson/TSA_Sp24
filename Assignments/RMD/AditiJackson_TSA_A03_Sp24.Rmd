@@ -53,7 +53,7 @@ library("ggfortify")
 
 ```{r creating time series df}
 # checking working directory
-getwd()
+# getwd()
 
 # loading data using read.csv
 renewable_energy_full <- read.csv("./Data/Table_10.1_Renewable_Energy_Production_and_Consumption_by_Source.csv", header = TRUE, dec = ".", sep=",",stringsAsFactors = TRUE)
