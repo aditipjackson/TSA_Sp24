@@ -33,30 +33,38 @@ Consider the same data you used for A2 from the spreadsheet "Table_10.1_Renewabl
 
 R packages needed for this assignment:"forecast","tseries", and "Kendall". Install these packages, if you haven't done yet. Do not forget to load them before running your script, since they are NOT default packages.\\
 
-```{r installing and loading packages}
+```{r packages, include=FALSE}
 #Load/install required package here
 #install.packages("forecast")
 #install.packages("tseries")
+#install.packages("lubridate")
 #install.packages("Kendall")
 #install.packages("ggplot2")
 #install.packages("cowplot")
+#install.packages("dplyr")
 
 library("forecast")
 library("tseries")
+library("lubridate")
 library("Kendall")
 library("ggplot2")
 library("cowplot")
 library("ggfortify")
+library("dplyr")
 
 ```
 
 
 ```{r creating time series df}
 # checking working directory
-# getwd()
+getwd()
 
+
+# had issues knitting due to using relative path; changed to absolute path and it worked
 # loading data using read.csv
-renewable_energy_full <- read.csv("./Data/Table_10.1_Renewable_Energy_Production_and_Consumption_by_Source.csv", header = TRUE, dec = ".", sep=",",stringsAsFactors = TRUE)
+renewable_energy_full <- 
+  read.csv(
+  "/home/guest/ENV797_APJ_S24_NEW/Data/Table_10.1_Renewable_Energy_Production_and_Consumption_by_Source.csv", header = TRUE, dec = ".", sep=",",stringsAsFactors = TRUE)
 
 # converting Month column to date object using lubridate
 renewable_energy_full$Month <- ym(renewable_energy_full$Month)
@@ -64,7 +72,8 @@ renewable_energy_full$Month <- ym(renewable_energy_full$Month)
 # renaming Month column to "Date"
 colnames(renewable_energy_full)[colnames(renewable_energy_full) == "Month"] <- "Date"
 
-# creating subset of data with Total Renewable Energy Production and Hydroelectric Power Consumption by date
+# creating subset of data with Total Renewable Energy Production
+## and Hydroelectric Power Consumption by date
 renewable_energy_sub <- renewable_energy_full %>%
   select(
     Date,
@@ -78,9 +87,6 @@ head(renewable_energy_sub)
 # start date is Jan 1, 1973
 # frequency is 12 (monthly data)
 renewable_energy_ts <- ts(renewable_energy_sub,start=c(1973,1),frequency=12)
-
-renewable_energy_ts
-
 ```
 ##Trend Component
 
@@ -93,7 +99,8 @@ For each time series, i.e., Renewable Energy Production and Hydroelectric Consum
 # Total Renewable Energy Production plots
 
 ## ts plot
-Renewables_tsplot <- ggplot(renewable_energy_sub,aes(x=Date,y=Total.Renewable.Energy.Production))+
+Renewables_tsplot <- 
+  ggplot(renewable_energy_sub,aes(x=Date,y=Total.Renewable.Energy.Production))+
   geom_line(color="black")+
   geom_smooth(method="lm")+
   labs(x="Date",y="Trillion Btu",title="Total Renewable Energy Production")
@@ -117,7 +124,8 @@ RenewableEnergy_allPlots
 # Hydroelectric Power Consumption plots
 
 ## ts plot
-Hydro_tsplot <- ggplot(renewable_energy_sub,aes(x=Date,y=Hydroelectric.Power.Consumption))+
+Hydro_tsplot <- 
+  ggplot(renewable_energy_sub,aes(x=Date,y=Hydroelectric.Power.Consumption))+
   geom_line(color="black")+
   geom_smooth(method="lm")+
   labs(x="Date",y="Trillion Btu",title="Hydroelectric Power Consumption")
@@ -154,7 +162,8 @@ t <- 1:num_obs
 
 
 # fitting linear regression for Renewable Energy Consumption time series
-Renewables_linReg <- lm(Total.Renewable.Energy.Production ~ t, data = renewable_energy_sub)
+Renewables_linReg <- 
+  lm(Total.Renewable.Energy.Production ~ t, data = renewable_energy_sub)
 summary(Renewables_linReg)
 
 # saving coefficients
@@ -168,7 +177,8 @@ Renew_beta1 <- Renewables_linReg$coefficients[2]
 ```{r linear regression of hydroelectric power consumption} 
 
 # fitting linear regression for Hydropower Production time series
-Hydro_linReg <- lm(Hydroelectric.Power.Consumption ~ t, data = renewable_energy_sub)
+Hydro_linReg <- 
+  lm(Hydroelectric.Power.Consumption ~ t, data = renewable_energy_sub)
 summary(Hydro_linReg)
 
 # saving coefficients
@@ -189,14 +199,18 @@ Use the regression coefficients from Q3 to detrend the series. Plot the detrende
 Renew_detrend <- renewable_energy_sub[,2] - (Renew_beta0+Renew_beta1*t)
 
 # creating data frame in order to plot
-df_renew_detrend <- data_frame("date"=renewable_energy_sub$Date,
-                               "observed"=renewable_energy_sub[,2],"detrend"=Renew_detrend)
+df_renew_detrend <- 
+  data_frame("date"=renewable_energy_sub$Date,
+             "observed"=renewable_energy_sub[,2],
+             "detrend"=Renew_detrend)
 
 # plotting detrended series
 ggplot(df_renew_detrend,aes(x=date))+
   geom_line(aes(y=observed),color="black")+
   geom_line(aes(y=detrend),color="blue")+
-  labs(x="Date",y="Observations",title="Renewable Energy Production - Detrended")
+  labs(x="Date",
+       y="Observations",
+       title="Renewable Energy Production - Detrended")
 
 
 # Hydroelectric Power Consumption
@@ -205,8 +219,9 @@ ggplot(df_renew_detrend,aes(x=date))+
 Hydro_detrend <- renewable_energy_sub[,3] - (Hydro_beta0+Hydro_beta1*t)
 
 # creating data frame in order to plot
-df_hydro_detrend <- data_frame("date"=renewable_energy_sub$Date,
-                               "observed"=renewable_energy_sub[,3],"detrend"=Hydro_detrend)
+df_hydro_detrend <- 
+  data_frame("date"=renewable_energy_sub$Date,
+             "observed"=renewable_energy_sub[,3],"detrend"=Hydro_detrend)
 
 # plotting detrended series
 ggplot(df_hydro_detrend,aes(x=date))+
@@ -239,7 +254,6 @@ plot_grid(autoplot(HydroConsump_detrend_acf),
           autoplot(HydroConsump_detrend_pacf),
           autoplot(HydroConsump_acf),
           autoplot(HydroConsump_pacf))
-
 
 ```
 
@@ -285,7 +299,7 @@ summary(HPC_seasonal_means_model)
 
 ### Q8
 Use the regression coefficients from Q7 to deseason the series. Plot the deseason series and compare with the plots from part Q1. Did anything change?
-```{r deseasoning series - renewable energy prod}
+```{r deseasoning series - renewable energy prod, warning=FALSE}
 
 # defining number of observations for ease of use in for loops
 nobs <- nrow(renewable_energy_sub)
@@ -306,7 +320,8 @@ for(i in 1:nobs){
 deseason_REP <- renewable_energy_sub[,2]-REP_seas_comp
   
 ## plotting deseasoned data
-REP_deseason_plot <- ggplot(renewable_energy_sub,aes(x=Date,y=Total.Renewable.Energy.Production))+
+REP_deseason_plot <-
+  ggplot(renewable_energy_sub,aes(x=Date,y=Total.Renewable.Energy.Production))+
   geom_line(color="blue")+
   labs(y="Total RE Production")+
   geom_line(aes(y=deseason_REP),color="green")
@@ -317,7 +332,7 @@ REP_deseason_plot
 > Plotting the original data set against the deseasoned data set. There does not appear to be an significant difference since the model does show a seasonal trend.
 
 
-```{r deseasoning series - hydro power consump}
+```{r deseasoning series - hydro power consump, warning=FALSE}
 # Hydroelectric Power Consumption
 ## storing regression coefficients in order to de-season data
 Hydro_SMM_beta0 <- HPC_seasonal_means_model$coefficients[1]
@@ -333,7 +348,8 @@ for(i in 1:nobs){
 deseason_HPC <- renewable_energy_sub[,3]-HPC_seas_comp
   
 ## plotting deseasoned data
-HPC_deseason_plot <- ggplot(renewable_energy_sub,aes(x=Date,y=Hydroelectric.Power.Consumption))+
+HPC_deseason_plot <-
+  ggplot(renewable_energy_sub,aes(x=Date,y=Hydroelectric.Power.Consumption))+
   geom_line(color="blue")+
   labs(y="Hydro Power Consumption")+
   geom_line(aes(y=deseason_HPC),color="green")
@@ -355,10 +371,10 @@ REP_deseasoned_pacf <- Pacf(deseason_REP,lag.max = 40,plot=FALSE)
 
 
 plot_grid(
-  autoplot(Renewables_acf,main=NULL),
-  autoplot(Renewables_pacf,main=NULL),
-  autoplot(REP_deseasoned_acf,main=NULL),
-  autoplot(REP_deseasoned_pacf,main=NULL),
+  autoplot(Renewables_acf),
+  autoplot(Renewables_pacf),
+  autoplot(REP_deseasoned_acf),
+  autoplot(REP_deseasoned_pacf),
   nrow=2, ncol=2
 )
 
@@ -368,10 +384,10 @@ HPC_deseasoned_acf <- Acf(deseason_HPC,lag.max = 40,plot=FALSE)
 HPC_deseasoned_pacf <- Pacf(deseason_HPC,lag.max = 40,plot=FALSE)
 
 plot_grid(
-  autoplot(HydroConsump_acf,main=NULL),
-  autoplot(HydroConsump_pacf,main=NULL),
-  autoplot(HPC_deseasoned_acf,main=NULL),
-  autoplot(HPC_deseasoned_pacf,main=NULL),
+  autoplot(HydroConsump_acf),
+  autoplot(HydroConsump_pacf),
+  autoplot(HPC_deseasoned_acf),
+  autoplot(HPC_deseasoned_pacf),
   nrow=2, ncol=2)
 
 ```

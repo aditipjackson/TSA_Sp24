@@ -226,7 +226,6 @@ Now let's shift attention to the seasonal component.
 iHP=1 
 
 #Use seasonal means model
-
 #First create the seasonal dummies
 dummies <- seasonaldummy(ts_inflow_data[,iHP])  
 #this function only accepts ts object, no need to add one here because date 
@@ -245,7 +244,7 @@ beta_coeff <- seas_means_model$coefficients[2:12]
 #compute seasonal component
 inflow_seas_comp <- array(0,nobs)
 for(i in 1:nobs){
-  inflow_seas_comp[i] <- (beta_int+beta_coeff %*% dummies[i,])
+  inflow_seas_comp[i] <- (beta_int+beta_coeff %*% dummies[i,]) # "%*%" is doing the internal product of a matrix, doing element by element multiplication
 }
 
 #Understanding what we did
