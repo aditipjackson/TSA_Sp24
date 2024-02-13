@@ -1,0 +1,249 @@
+---
+title: "ENV 790.30 - Time Series Analysis for Energy Data | Spring 2024"
+subtitle: "Assignment 4 - Due date 02/12/24"
+author: "Aditi Jackson"
+output: pdf_document
+geometry: margin=2.54cm
+editor_options: 
+  chunk_output_type: console
+---
+  
+## Directions
+  
+You should open the .rmd file corresponding to this assignment on RStudio. The file is available on our class repository on Github. And to do so you will need to fork our repository and link it to your RStudio.  
+
+Once you have the file open on your local machine the first thing you will do is rename the file such that it includes your first and last name (e.g., "LuanaLima_TSA_A04_Sp23.Rmd"). Then change "Student Name" on line 4 with your name. 
+
+Then you will start working through the assignment by  **creating code and output** that answer each question. Be sure to use this assignment document. Your report should contain the answer to each question and any plots/tables you obtained (when applicable).
+
+When you have completed the assignment, **Knit** the text and code into a single PDF file. Submit this pdf using Sakai. 
+
+R packages needed for this assignment: "xlsx" or "readxl", "ggplot2", "forecast","tseries", and "Kendall". Install these packages, if you haven't done yet. Do not forget to load them before running your script, since they are NOT default packages.\\
+
+```{r setup, include=FALSE} 
+knitr::opts_chunk$set(echo = TRUE,tidy.opts=list(width.cutoff=80), tidy=FALSE) 
+```
+
+
+```{r loading packages}
+#Load/install required package here
+library(lubridate)
+library(ggplot2)
+library(forecast)
+library(Kendall)
+library(tseries)
+library(readxl)
+library(dplyr)
+library(base)
+library(cowplot)
+
+```
+
+## Questions 
+
+Consider the same data you used for A3 from the spreadsheet "Table_10.1_Renewable_Energy_Production_and_Consumption_by_Source.xlsx". The data comes from the US Energy Information and Administration and corresponds to the January 2021 Monthly Energy Review. For this assignment you will work only with the column "Total Renewable Energy Production". 
+
+```{r importing data}
+# checking working directory
+getwd()
+
+# had issues knitting due to using relative path; changed to absolute path and it worked
+# loading data using read.csv
+renewable_energy_full <- 
+  read.csv(
+  "/home/guest/ENV797_APJ_S24_NEW/Data/Table_10.1_Renewable_Energy_Production_and_Consumption_by_Source.csv", header = TRUE, dec = ".", sep=",",stringsAsFactors = TRUE)
+
+# renaming the "Month" column to "Date"
+colnames(renewable_energy_full)[colnames(renewable_energy_full) == "Month"] <- "Date_MY"
+
+# converting the "Date" column to a date object using lubridate
+renewable_energy_full$Date_MY <- ym(renewable_energy_full$Date_MY)
+
+# creating subset of data with Total Renewable Energy Production
+## and Hydroelectric Power Consumption by date
+renewable_energy_sub <- renewable_energy_full %>%
+  select(
+    Date_MY,
+    Total.Renewable.Energy.Production)
+
+# Verifying data
+head(renewable_energy_sub)
+
+# transforming data into ts object
+# start date is Jan 1, 1973
+# frequency is 12 (monthly data)
+renewable_energy_ts <- ts(renewable_energy_sub,start=c(1973,1),frequency=12)
+
+```
+
+## Stochastic Trend and Stationarity Tests
+
+### Q1
+Difference the "Total Renewable Energy Production" series using function diff(). Function diff() is from package base and take three main arguments:
+* *x* vector containing values to be differenced;
+* *lag* integer indicating with lag to use;
+* *differences* integer indicating how many times series should be differenced.
+
+Try differencing at lag 1 only once, i.e., make `lag=1` and `differences=1`. Plot the differenced series Do the series still seem to have trend?
+
+```{r differencing}
+
+# differencing the data
+Renew_diff <- diff(renewable_energy_ts[,2],lag=1,differences = 1)
+
+# creating time series object 
+Renew_diff_ts=ts(Renew_diff, frequency=12,start=c(1973,1))
+
+autoplot(Renew_diff)+
+  ggtitle("Total Renewable Energy Production - differenced") +
+  xlab("Time") +
+  ylab("Energy Production [Trillion Btu]")
+
+```
+
+> The mean of the differenced series visually appears to oscilalte around zero suggesting that a trend is no longer present.
+
+### Q2
+Copy and paste part of your code for A3 where you run the regression for Total Renewable Energy Production and subtract that from the orinal series. This should be the code for Q3 and Q4. make sure you use the same name for you time series object that you had in A3.
+
+```{r regression}
+# creating vector "t" to represent number of observations
+num_obs <- nrow(renewable_energy_sub)
+t <- 1:num_obs
+
+# fitting linear regression for Renewable Energy Consumption time series
+Renewables_linReg <- 
+  lm(Total.Renewable.Energy.Production ~ t, data = renewable_energy_sub)
+summary(Renewables_linReg)
+
+# saving coefficients
+Renew_beta0 <- Renewables_linReg$coefficients[1]
+Renew_beta1 <- Renewables_linReg$coefficients[2]
+
+# de-trending renewable energy production time series 
+Renew_detrend <- renewable_energy_sub[,2] - (Renew_beta0+Renew_beta1*t)
+
+# creating time series object 
+Renew_detrend_ts=ts(Renew_detrend, frequency=12,start=c(1973,1))
+
+# creating data frame in order to plot
+df_renew_detrend <- 
+  data_frame("date"=renewable_energy_sub$Date,
+             "observed"=renewable_energy_sub[,2],
+             "detrend"=Renew_detrend)
+
+# plotting detrended series
+ggplot(df_renew_detrend,aes(x=date))+
+  geom_line(aes(y=observed),color="black")+
+  geom_line(aes(y=detrend),color="blue")+
+  labs(x="Time",
+       y="Energy Production [Trillion Btu]",
+       title="Total Renewable Energy Production")
+```
+
+### Q3
+Now let's compare the differenced series with the detrended series you calculated on A3. In other words, for the "Total Renewable Energy Production" compare the differenced series from Q1 with the series you detrended in Q2 using linear regression. 
+
+Using autoplot() + autolayer() create a plot that shows the three series together. Make sure your plot has a legend. The easiest way to do it is by adding the `series=` argument to each autoplot and autolayer function. Look at the key for A03 for an example. 
+
+```{r differenced vs detrended}
+
+# plotting original, detrended, and differenced series 
+autoplot(renewable_energy_ts[,2],series="Original")+
+  autolayer(Renew_detrend_ts,series="Detrended")+
+  autolayer(Renew_diff_ts,series="Differenced")+
+  ylab("Energy Production [Trillion Btu]")+
+  ggtitle("Total Renewable Energy Production")
+
+```
+
+### Q4
+Plot the ACF for the three series and compare the plots. Add the argument `ylim=c(-0.5,1)` to the autoplot() or Acf() function - whichever you are using to generate the plots - to make sure all three y axis have the same limits. Which method do you think was more efficient in eliminating the trend? The linear regression or differencing?
+
+```{r generating acfs}
+
+# ACF of original series
+ACF_original <- autoplot(Acf(renewable_energy_ts[,2],lag.max = 40,plot=FALSE))+ylim(-0.5, 1)
+
+# ACF of detrended series
+ACF_detredned <- autoplot(Acf(Renew_detrend_ts,lag.max=40,plot=FALSE))+ylim(-0.5, 1)
+
+# ACF of differenced series
+ACF_differenced <- autoplot(Acf(Renew_diff_ts, lag.max=40,plot=FALSE))+ylim(-0.5, 1)
+
+# plotting all three on the same grid for easier comparison
+plot_grid(ACF_original,ACF_detredned,ACF_differenced)
+
+```
+
+> In this case it appears that the linear regression was more effective at removing the trend.
+
+### Q5
+Compute the Seasonal Mann-Kendall and ADF Test for the original "Total Renewable Energy Production" series. Ask R to print the results. Interpret the results for both test. What is the conclusion from the Seasonal Mann Kendall test? What's the conclusion for the ADF test? Do they match what you observed in Q2? Recall that having a unit root means the series has a stochastic trend. And when a series has stochastic trend we need to use a different procedure to remove the trend.
+
+```{r Mann-Kendall and ADF Tests}
+
+# Seasonal Mann-Kendall Test
+SMKtest <- SeasonalMannKendall(renewable_energy_ts[,2])
+print("Results for Seasonal Mann Kendall /n")
+print(summary(SMKtest))
+
+# ADF Test
+## null hypothesis is that data has a unit root (aka is stochastic)
+print("Results for ADF test/n")
+print(adf.test(renewable_energy_ts[,2],alternative = "stationary"))
+
+```
+
+
+### Q6
+Aggregate the original "Total Renewable Energy Production" series by year. You can use the same procedure we used in class. Store series in a matrix where rows represent months and columns represent years. And then take the columns mean using function colMeans(). Recall the goal is the remove the seasonal variation from the series to check for trend. Convert the accumulates yearly series into a time series object and plot the series using autoplot().
+
+```{r}
+
+# grouping data into yearly steps using matrix method
+renewables_matrix <- matrix(renewable_energy_ts[,2],byrow=FALSE,nrow=12)
+renewables_by_year <- colMeans(renewables_matrix)
+
+# defining years
+Date_MY <- renewable_energy_sub$Date_MY
+Year_MY <- c(year(first(Date_MY)):year(last(Date_MY)))
+
+# grouping data into dataframe
+renewables_by_year_NEW <- data.frame(Year_MY, renewables_by_year)
+
+# converting to time series object
+renewables_yearly_ts <- ts(renewables_by_year_NEW)
+
+# plotting ts
+autoplot(renewables_yearly_ts[,2])+
+  xlab("Years")+
+  ylab("Energy Production [Trillion Btu]")+
+  ggtitle("Annual Renewable Energy Production")
+
+
+```
+
+### Q7
+Apply the Mann Kendal, Spearman correlation rank test and ADF. Are the results from the test in agreement with the test results for the monthly series, i.e., results for Q6?
+
+```{r stationary tests on yearly data}
+
+# Seasonal Mann-Kendall Test
+SMKtest <- SeasonalMannKendall(renewables_yearly_ts[,2])
+print("Results for Seasonal Mann Kendall /n")
+print(summary(SMKtest))
+
+# Spearman Correlation Test
+print("Results from Spearman Correlation")
+sp_rho=cor(renewables_yearly_ts[,2],Year_MY,method="spearman")
+print(sp_rho)
+
+# ADF Test
+## null hypothesis is that data has a unit root (aka is stochastic)
+print("Results for ADF test/n")
+print(adf.test(renewables_yearly_ts[,2],alternative = "stationary"))
+
+```
+
+
