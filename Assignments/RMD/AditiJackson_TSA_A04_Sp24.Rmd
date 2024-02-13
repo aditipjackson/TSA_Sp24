@@ -51,10 +51,12 @@ getwd()
 # loading data using read.csv
 renewable_energy_full <- 
   read.csv(
-  "/home/guest/ENV797_APJ_S24_NEW/Data/Table_10.1_Renewable_Energy_Production_and_Consumption_by_Source.csv", header = TRUE, dec = ".", sep=",",stringsAsFactors = TRUE)
+  "/home/guest/ENV797_APJ_S24_NEW/Data/Table_10.1_Renewable_Energy_Production_and_Consumption_by_Source.csv",
+  header = TRUE, dec = ".", sep=",",stringsAsFactors = TRUE)
 
 # renaming the "Month" column to "Date"
-colnames(renewable_energy_full)[colnames(renewable_energy_full) == "Month"] <- "Date_MY"
+colnames(renewable_energy_full)[colnames(renewable_energy_full) == "Month"]
+<- "Date_MY"
 
 # converting the "Date" column to a date object using lubridate
 renewable_energy_full$Date_MY <- ym(renewable_energy_full$Date_MY)
@@ -84,7 +86,7 @@ Difference the "Total Renewable Energy Production" series using function diff().
 * *lag* integer indicating with lag to use;
 * *differences* integer indicating how many times series should be differenced.
 
-Try differencing at lag 1 only once, i.e., make `lag=1` and `differences=1`. Plot the differenced series Do the series still seem to have trend?
+Try differencing at lag 1 only once, i.e., make `lag=1` and `differences=1`. Plot the differenced series. Do the series still seem to have trend?
 
 ```{r differencing}
 
@@ -101,7 +103,7 @@ autoplot(Renew_diff)+
 
 ```
 
-> The mean of the differenced series visually appears to oscilalte around zero suggesting that a trend is no longer present.
+> It seems like there is still some sort of trend remaining given similarity in wave patterns at yearly intervals - perhaps some sort of seasonality.
 
 ### Q2
 Copy and paste part of your code for A3 where you run the regression for Total Renewable Energy Production and subtract that from the orinal series. This should be the code for Q3 and Q4. make sure you use the same name for you time series object that you had in A3.
@@ -163,20 +165,23 @@ Plot the ACF for the three series and compare the plots. Add the argument `ylim=
 ```{r generating acfs}
 
 # ACF of original series
-ACF_original <- autoplot(Acf(renewable_energy_ts[,2],lag.max = 40,plot=FALSE))+ylim(-0.5, 1)
+ACF_original <- 
+  autoplot(Acf(renewable_energy_ts[,2],lag.max = 40,plot=FALSE))+ylim(-0.5, 1)
 
 # ACF of detrended series
-ACF_detredned <- autoplot(Acf(Renew_detrend_ts,lag.max=40,plot=FALSE))+ylim(-0.5, 1)
+ACF_detredned <- 
+  autoplot(Acf(Renew_detrend_ts,lag.max=40,plot=FALSE))+ylim(-0.5, 1)
 
 # ACF of differenced series
-ACF_differenced <- autoplot(Acf(Renew_diff_ts, lag.max=40,plot=FALSE))+ylim(-0.5, 1)
+ACF_differenced <- 
+  autoplot(Acf(Renew_diff_ts, lag.max=40,plot=FALSE))+ylim(-0.5, 1)
 
 # plotting all three on the same grid for easier comparison
 plot_grid(ACF_original,ACF_detredned,ACF_differenced)
 
 ```
 
-> In this case it appears that the linear regression was more effective at removing the trend.
+> In this case it appears that differeing was more effective at removing the trend. This is because the magnitudes of the ACF values are decreased significantly compared to the original and linear regression series, and their seems to be less time dependence overall. This makes sense given that we are looking at a stochastic trend, which is not well approximated by a linear model.
 
 ### Q5
 Compute the Seasonal Mann-Kendall and ADF Test for the original "Total Renewable Energy Production" series. Ask R to print the results. Interpret the results for both test. What is the conclusion from the Seasonal Mann Kendall test? What's the conclusion for the ADF test? Do they match what you observed in Q2? Recall that having a unit root means the series has a stochastic trend. And when a series has stochastic trend we need to use a different procedure to remove the trend.
@@ -195,6 +200,9 @@ print(adf.test(renewable_energy_ts[,2],alternative = "stationary"))
 
 ```
 
+> The Seasonal Mann Kendal Test has a test statistic value (tau) of 0.783, which suggests a strong positive trend. The p-value is < 2.22e-16, which indicates that there is strong evidence against the null hypothesis that there is no trend. The concludion of this test is that is it unlikely no trend exists.
+
+> The ADF Test has a test statistic of -1.24 and a p-value of 0.9. Since the p-value is greater than alpha = 0.05, we fail to reject the null hypothesis that the data has a unit root. This suggests the presence of a stochastic trend.
 
 ### Q6
 Aggregate the original "Total Renewable Energy Production" series by year. You can use the same procedure we used in class. Store series in a matrix where rows represent months and columns represent years. And then take the columns mean using function colMeans(). Recall the goal is the remove the seasonal variation from the series to check for trend. Convert the accumulates yearly series into a time series object and plot the series using autoplot().
@@ -221,8 +229,8 @@ autoplot(renewables_yearly_ts[,2])+
   ylab("Energy Production [Trillion Btu]")+
   ggtitle("Annual Renewable Energy Production")
 
-
 ```
+
 
 ### Q7
 Apply the Mann Kendal, Spearman correlation rank test and ADF. Are the results from the test in agreement with the test results for the monthly series, i.e., results for Q6?
@@ -246,4 +254,8 @@ print(adf.test(renewables_yearly_ts[,2],alternative = "stationary"))
 
 ```
 
+Yes, the results in Q7 align with the results from Q5 and Q6. It appears that there is some sort of non-stationary trend present:
+> With the yearly data, the Seasonal Mann-Kendal Test has a tau of 0.799 and a p-value of -2.2204e-16, which provide strong evidence against the null hypothesis that there is no trend. This therefore suggests that there may be some sort of trend present in the yearly production data.
+> The Spearman correlation coefficient is ~0.914, indicating a strong positive relationship between time and annual renewable energy production.
+> The ADF test has a test stat of -2.0943 and a p-value of 0.5361. Since the p-value is greater than a significance level of alpha = 0.05, we fail to reject the null hypothesis that the yearly series is non-stationary. The conclusion would be that there is likely a stochastic trend present.
 
