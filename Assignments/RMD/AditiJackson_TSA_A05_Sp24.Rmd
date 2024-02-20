@@ -22,8 +22,6 @@ R packages needed for this assignment: "readxl", "ggplot2", "forecast","tseries"
 
 ```{r packages}
 #Load/install required package here
-#install.packages("readxl")
-library(readxl)
 library(forecast)
 library(tseries)
 library(ggplot2)
@@ -55,10 +53,6 @@ energy_data$Date_MY <- ym(energy_data$Date_MY)
 # Verifying data
 head(energy_data)
 
-# creating variables to represent # of rows & # of variables in data
-nobs=nrow(energy_data)
-nvar=ncol(energy_data)
-
 ```
 
 ### Q1
@@ -68,7 +62,12 @@ For this assignment you will work only with the following columns: Solar Energy 
 ```{r subsetting data}
 # subsetting data into data frame with three variables: Date, Solar Energy Consumption
 ## and Wind Energy Consumption
-# using mutate to convert solar and wind columns to numeric
+
+# using mutate to convert solar and wind columns to character types in order to 
+## change data showing as "Not Available" to variable type that na_if function accepts
+
+# dropping N/As and converting to numeric
+
 # using drop_na() to take care of any N/A values
 energy_data_sub <- energy_data %>%
   select(
@@ -76,10 +75,17 @@ energy_data_sub <- energy_data %>%
     Solar.Energy.Consumption,
     Wind.Energy.Consumption) %>%
   mutate(
+    Solar.Energy.Consumption = as.character(Solar.Energy.Consumption), 
+    Solar.Energy.Consumption = na_if(Solar.Energy.Consumption, "Not Available"),
+    Wind.Energy.Consumption = as.character(Wind.Energy.Consumption), 
+    Wind.Energy.Consumption = na_if(Wind.Energy.Consumption, "Not Available")
+  ) %>%
+  drop_na()%>%
+  mutate(
     Solar.Energy.Consumption = as.numeric(Solar.Energy.Consumption),
-    Wind.Energy.Consumption = as.numeric(Wind.Energy.Consumption))%>%
-  drop_na()
-  
+    Wind.Energy.Consumption = as.numeric(Wind.Energy.Consumption))
+ 
+
 ```
 
 ### Q2
@@ -153,7 +159,9 @@ autoplot(decomp_add_wind)+
 
 ```
 
-> The trend component of solar shows a generally increasing trend. The trend component of wind shows a generally increasing trend. The random components of both series appear to still have some seasonality present. This is because both random components have a pretty constant sinusoidal pattern. [REVISE WIND]
+> SOLAR: The trend component of solar shows a generally increasing non-linearly (trend appears exopnential). The random component of solar does not appear to be truly "random" There seems to be some seasonality present given the equally spaced sine wave pattern over time.
+
+> WIND: The trend component of wind shows a steadily increasing upward slow, which looks more linear than solar (but I'm not 100% certain that we can  is monotonic). The random component of wind also appears to have some seasonality still present (equally spaced sine waves) - at least for most of the 1970s through mid 1990s. However, in the later 1990s it seems as if the randomness increases.
 
 
 ### Q5
@@ -171,21 +179,16 @@ autoplot(decomp_mult_solar)+
 autoplot(decomp_mult_wind)+
  ggtitle("Decomposition of multiplicative time series - WIND")
 
-# plotting everything together to see changes
-plot_grid(autoplot(decomp_add_solar),
-          autoplot(decomp_add_wind),
-          autoplot(decomp_mult_solar),
-          autoplot(decomp_mult_wind))
 
 ```
 
-> It appears that the random component of solar decreased in magnitude, and the general wave pattern has been mostly eliminated. For wind, [ADD] 
+> For both wind and solar, there seems to be less residual seasonality present in the random component when using the multiplicative model.
 
 ### Q6
 
 When fitting a model to this data, do you think you need all the historical data? Think about the data from 90s and early 20s. Are there any information from those years we might need to forecast the next six months of Solar and/or Wind consumption. Explain your response.
 
-> Answer: [ADD]
+> Answer: I do not think we need ALL the historical data to fit a model. This is because the trends in both solar and wind consumption change quite drastically from the 1990s and early 2000s, going from relatively flat to positively increasing. If we are looking to forecast the next 6 months, we'd likely only need the data from the mid-2000s to present day since that data shows a relatively similar upward sloping trend pattern. And since forecasting depends on knowing what happened in the recent past to predict future patterns, data from before the mid-2000s wouldn't be additive to predicting future consumption patterns.
 
 ### Q7
 
@@ -214,7 +217,8 @@ autoplot(decomp_add_wind2)+
 
 ```
 
-> Answer: [ADD]
+> SOLAR: The trend is increasing. The random component still appears to be influenced by seasonality. This may be because seasonality is very prominent in this series. 
+> WIND: Similarly, there is an increasing trend. The random component appears to be be more "random" compared to the decompositions in the previous questions.
 
 ## Identify and Remove outliers
 
@@ -228,27 +232,41 @@ Apply the `tsclean()` to both series from Q4. Did the function removed any outli
 solar_clean <- tsclean(ts_solar)
 wind_clean <- tsclean(ts_wind)
 
-# plotting "cleaned" series
-autoplot(solar_clean)
-autoplot(wind_clean)
+# plotting "cleaned" series vs. original series
+plot_grid(autoplot(ts_solar)+
+            ggtitle("Original"),
+          autoplot(solar_clean)+
+            ggtitle("Clean"))
+
+plot_grid(autoplot(ts_wind)+
+            ggtitle("Original"),
+          autoplot(wind_clean)+
+            ggtitle("Clean"))
 
 ```
 
-> ADD EXPLANATION
+> Yes, it appears that the ts_clean pacakge removed outliers from both the solar and wind time series. For both series we see less variation in applitudes when looking at the clean series compared to the original series.
 
 ### Q9
 
-Redo number Q8 but now with the time series you created on Q7, i.e., the series starting in 2012. Using what `autoplot()` again what happened now? Did the function removed any outliers from the series?
+Redo number Q8 but now with the time series you created on Q7, i.e., the series starting in 2012. Using `autoplot()` again what happened now? Did the function removed any outliers from the series?
 
 ```{r removing outliers cont'd}
 # removing outliers with tsclean()
 solar2_clean <- tsclean(ts_solar2)
 wind2_clean <- tsclean(ts_wind2)
 
-# plotting "cleaned" series
-autoplot(solar2_clean)
-autoplot(wind2_clean)
+# plotting "cleaned" series vs. "original" series
+plot_grid(autoplot(ts_solar2)+
+            ggtitle("Original"),
+          autoplot(solar2_clean)+
+            ggtitle("Clean"))
+
+plot_grid(autoplot(ts_wind2)+
+            ggtitle("Original"),
+          autoplot(wind2_clean)+
+            ggtitle("Clean"))
 
 ```
 
-> Answer: ADD EXPLANATION
+> Answer: Using the time series from Q7 it does not appear that the ts_clean pacakge removed any outliers.
