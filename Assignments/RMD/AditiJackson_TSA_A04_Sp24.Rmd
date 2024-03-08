@@ -55,8 +55,7 @@ renewable_energy_full <-
   header = TRUE, dec = ".", sep=",",stringsAsFactors = TRUE)
 
 # renaming the "Month" column to "Date"
-colnames(renewable_energy_full)[colnames(renewable_energy_full) == "Month"]
-<- "Date_MY"
+colnames(renewable_energy_full)[colnames(renewable_energy_full) == "Month"] <- "Date_MY"
 
 # converting the "Date" column to a date object using lubridate
 renewable_energy_full$Date_MY <- ym(renewable_energy_full$Date_MY)

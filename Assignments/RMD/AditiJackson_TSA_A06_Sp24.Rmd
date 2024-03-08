@@ -18,6 +18,10 @@ When you have completed the assignment, **Knit** the text and code into a single
 
 R packages needed for this assignment: "ggplot2", "forecast", "tseries" and "sarima". Install these packages, if you haven't done yet. Do not forget to load them before running your script, since they are NOT default packages.
 
+```{r setup, include=FALSE} 
+knitr::opts_chunk$set(echo = TRUE,tidy.opts=list(width.cutoff=80), tidy=FALSE) 
+```
+
 ```{r packages}
 #Load/install required package here
 #install.packages("sarima")
@@ -37,7 +41,7 @@ Describe the important characteristics of the sample autocorrelation function (A
 
 * AR(2)
 
-> Answer: The ACF plot of an AR model decays exponentially with time. In this case, the order of the series is 2, which is given by the PACF. The PACF for AR(2) will indicate that autocorrelation is only significant up to the second lag. Graphically we see this as the first two bars being above the sigificance cut off and all other lags being within the cutoff.
+> Answer: The ACF plot of an AR model decays exponentially with time, and the PACF plot will identify the order of the AR model. In this case, the order of the series is 2. The PACF for AR(2) will indicate that autocorrelation is only significant for two lags.
 
 * MA(1)
 
@@ -112,26 +116,27 @@ plot_grid(
   autoplot(Pacf_arma_01),
   autoplot(Pacf_arma_11))
 
-
 ```
 
 (d) Look at the ACFs and PACFs. Imagine you had these plots for a data set and you were asked to identify the model, i.e., is it AR, MA or ARMA and the order of each component. Would you be able identify them correctly? Explain your answer.
 
 > Answer:
 ARMA(1,0): I think I would be able to identify this series correctly as AR by looking at the ACF, which appears to decay exponentially, and the PACF, which shows one sigificant lag (indicating an order of 1).
-ARMA(0,1): I'm not as certain I'd be able to identify this as MA. By looking at the ACF I can tell that the order is 1 given the sigicant lag. However, it's hard to see an exponential decay in the PACF, which would make me less certain of verifying this as MA.
+ARMA(0,1): I'm not as certain I'd be able to identify this as MA. By looking at the ACF I can tell that the order is 1 since only lag 1 is significant. However, it's hard to see an exponential decay in the PACF, which is characteristic of MA models.
 ARMA(1,1): I do not think I would not be able to identify this as ARMA. The ACF decays exponentially and looks similar to the ACF of the AR while the PACF has 2 significant lags and appears more similar to the PACF of the MA. 
 
 (e) Compare the PACF values R computed with the values you provided for the lag 1 correlation coefficient, i.e., does $\phi=0.6$ match what you see on PACF for ARMA(1,0), and ARMA(1,1)? Should they match?
 
 > Answer:
-ARMA(1,0): Lag one of the PACF, which gives the correlation coefficient values for AR models, has a magnitude of 0.6 which matches the given Phi. This seems to an ideal situation where the population parameter (Phi) is equal to the sample estimate given by the magnitude of lag 1.
-ARMA(0,1): Lag one of the ACF, which gives the value of the Theta has a magnitude of ~0.4. It does not match the population parameter (Theta), which equals 0.9. This is likely becasue we have only run the model for n=100. Perhaps running it with more observations will give us a sample estimate closer to theta.
-ARMA(1,1): Lag 1 of the PACF gives us a value of ~0.77, which is almost halfway between phi=0.6 and theta=0.9. [ADD]
+ARMA(1,0): The calculated correlation coefficient at lag 1 has a magnitude of 0.6, which matches the given value of Phi. This seems to an ideal situation where the population parameter (Phi) is equal to the sample estimate given by the magnitude of lag 1.
+ARMA(0,1): The calculated correlation coefficient at lag 1 has a magnitude of ~0.4. It does not match the given value of Theta (0.9). However, this may be becasue we have only run the model for n=100 observations. Perhaps running it with more observations will give us a sample estimate closer to theta.
+ARMA(1,1): Lag 1 of the PACF gives us a value of ~0.77, which is almost halfway between phi=0.6 and theta=0.9. This seems reasonable as it reflects some sort of midpoint between phi and theta.
 
 (f) Increase number of observations to $n=1000$ and repeat parts (b)-(e).
 
-```{r repeating b through e}
+```{r repeating with n_1000 observations}
+
+# a
 # Generating 100 observations for each ARMA model
 ## AMRA(1,0)
 arma_10_v2 <- arima.sim(model = list(ar = phi, ma = 0), n = 1000)
@@ -153,6 +158,8 @@ arma_01_plot_v2
 arma_11_plot_v2 <- autoplot(arma_11_v2)
 arma_11_plot_v2
 
+
+# b
 # creating ACFs
 Acf_arma_10_v2 <- Acf(arma_10_v2,lag.max=40,plot=FALSE)
 Acf_arma_01_v2 <- Acf(arma_01_v2,lag.max=40,plot=FALSE)
@@ -164,12 +171,13 @@ plot_grid(
   autoplot(Acf_arma_01_v2),
   autoplot(Acf_arma_11_v2))
 
-# creating ACFs
+# c
+# creating PACFs
 Pacf_arma_10_v2 <- Pacf(arma_10_v2,lag.max=40,plot=FALSE)
 Pacf_arma_01_v2 <- Pacf(arma_01_v2,lag.max=40,plot=FALSE)
 Pacf_arma_11_v2 <- Pacf(arma_11_v2,lag.max=40,plot=FALSE)
 
-# plotting ACFs
+# plotting PACFs
 plot_grid(
   autoplot(Pacf_arma_10_v2),
   autoplot(Pacf_arma_01_v2),
@@ -177,10 +185,18 @@ plot_grid(
 
 ```
 
+(d) Look at the ACFs and PACFs. Imagine you had these plots for a data set and you were asked to identify the model, i.e., is it AR, MA or ARMA and the order of each component. Would you be able identify them correctly? Explain your answer.
+
 > Answer:
-ARMA(1,0): The given still phi matches the PACF value in this case.
-ARMA(0,1): The sample estiamte is still below the below the population parameter, but increased above 0.4. This is likely because we ran the model with more observations (law of large numbers).
-ARMA(1,1):[ADD]
+ARMA(1,0): I am confident that I would be able to identify this series correctly as AR by looking at the ACF, which decays exponentially, and the PACF, which shows one sigificant lag (indicating an order of 1).
+ARMA(0,1): With n=1000 observations I am more confident that I'd be able to identify this as an MA proess. The exponential decay pattern is more pronounced in the PACF with increasing observations. The ACF still shows an order of 1.
+ARMA(1,1): Again, this one is hard to tell. It seems to exhibit both characteristics of the AR and MA processes in its ACF and PACF. It's ACF decays exponentially per an AR process. It's PACF appears to also decay exponentially and looks similar to the MA PACF.
+
+(e) Compare the PACF values R computed with the values you provided for the lag 1 correlation coefficient, i.e., does $\phi=0.6$ match what you see on PACF for ARMA(1,0), and ARMA(1,1)? Should they match?
+> Answer:
+ARMA(1,0): The calculated correlation coefficient is a little above 0.6, which is very close to the given value of phi=0.6.
+ARMA(0,1): The calculated correlation coefficient is ~0.5, which is still below the below the population parameter of theta=0.9. However, it's notable that the calculated value increased by ~0.1 when running the model with more obsevations.
+ARMA(1,1): The first lag of the PACF has a calculated correlation coefficient a little below 0.6. This is close to Phi=0.6, and seems to be getting closer as we increase the number of observations.
 
 ## Q3
 
@@ -205,8 +221,8 @@ series using `autoplot()`. Does it look seasonal?
 ```{r seasonal ARIMA}
 
 # Parameters
-phi <- 0.6
-theta <- 0.9
+phi <- 0.8
+theta <- 0.5
 
 # defining SARIMA model
 sarima_model_001100 <- list(order = c(0,0,1), seasonal = list(order = c(1,0,0)), period = 12,
@@ -220,6 +236,9 @@ autoplot(model_sim)
 
 ```
 
+> Answer: There is some sort of up and down pattern repeating approximately every 12 months, which suggests there may be some seasonality. Although I'm unsure.
+
+
 ## Q5
 
 Plot ACF and PACF of the simulated series in Q4. Comment if the plots are well representing the model you simulated, i.e., would you be able to identify the order of both non-seasonal and seasonal components from the plots? Explain.
@@ -231,3 +250,4 @@ acf_sarima_model_001100 <- Acf(model_sim, lag.max=40)
 pacf_sarima_model_001100 <- Pacf(model_sim, lag.max=40)
 
 ```
+> Answer: For the ACF plot, I would expect to see an exponential decay for non-seasonal lags and significant spikes at the seasonal lags for the seasonal component (multiples of 12). I do not observe either of these attributes in the ACF, which suggests to me that the model may not be representing the process well. For the PACF, I observe that the lags tail off, which suggests an MA process with an order of 1 (based on significnat spike at ACF). Further, there appear to be 2 highly significant lags in the PACF, which would suggest that the order of the seasonal model is 2. However, this is not reflective of the model from Q4 where Q=1.

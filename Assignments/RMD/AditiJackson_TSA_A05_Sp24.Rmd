@@ -113,7 +113,7 @@ ggplot(energy_data_sub,aes(x=Date_MY,y=Wind.Energy.Consumption))+
 
 Now plot both series in the same graph, also using ggplot(). Use function `scale_color_manual()` to manually add a legend to ggplot. Make the solar energy consumption red and wind energy consumption blue. Add informative name to the y axis using `ylab("Energy Consumption)`. And use function `scale_x_date()` to set x axis breaks every 5 years.
 
-```{r initial time series plots cont'd}
+```{r initial time series plots contd}
 
 # plotting solar & wind together
 ggplot(energy_data_sub,aes(x=Date_MY))+
@@ -142,7 +142,7 @@ Additional info on `decompose()`.
 
 Transform wind and solar series into a time series object and apply the decompose function on them using the additive option, i.e., `decompose(ts_data, type = "additive")`. What can you say about the trend component? What about the random component? Does the random component look random? Or does it appear to still have some seasonality on it?
 
-```{r decomposing time series, type = additive}
+```{r additive decomp}
 # creating time series objects fo solar and wind
 ts_solar = ts(energy_data_sub[,2],start=c(1973,1),frequency=12)
 ts_wind = ts(energy_data_sub[,3],start=c(1973,1),frequency=12)
@@ -168,7 +168,7 @@ autoplot(decomp_add_wind)+
 
 Use the decompose function again but now change the type of the seasonal component from additive to multiplicative. What happened to the random component this time?
 
-```{r decomposing time series, type = multiplicative}
+```{r multiplicative decomp}
 # decomposing solar and wind using multiplicative type
 decomp_mult_solar <- decompose(ts_solar, type = "multiplicative")
 decomp_mult_wind <- decompose(ts_wind, type = "multiplicative")
@@ -251,7 +251,7 @@ plot_grid(autoplot(ts_wind)+
 
 Redo number Q8 but now with the time series you created on Q7, i.e., the series starting in 2012. Using `autoplot()` again what happened now? Did the function removed any outliers from the series?
 
-```{r removing outliers cont'd}
+```{r removing outliers contd}
 # removing outliers with tsclean()
 solar2_clean <- tsclean(ts_solar2)
 wind2_clean <- tsclean(ts_wind2)

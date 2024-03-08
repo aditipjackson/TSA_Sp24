@@ -59,7 +59,6 @@ library("dplyr")
 # checking working directory
 getwd()
 
-
 # had issues knitting due to using relative path; changed to absolute path and it worked
 # loading data using read.csv
 renewable_energy_full <- 
